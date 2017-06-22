@@ -8,7 +8,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
-public class ChatServerGUI extends JFrame implements ActionListener, ChatServerListener {
+public class ChatServerGUI extends JFrame implements ActionListener, ChatServerListener, Thread.UncaughtExceptionHandler {
 
     private static final int POS_X = 1100;
     private static final int POS_Y = 150;
@@ -35,6 +35,7 @@ public class ChatServerGUI extends JFrame implements ActionListener, ChatServerL
     }
 
     private ChatServerGUI(){
+        Thread.setDefaultUncaughtExceptionHandler(this);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setBounds(POS_X, POS_Y, WIDTH, HEIGHT);
         setTitle(TITLE);
@@ -63,6 +64,7 @@ public class ChatServerGUI extends JFrame implements ActionListener, ChatServerL
         Object src = e.getSource();
         if (src == btnStartListening){
             chatServer.startListening(8189);
+            throw new RuntimeException("Ой, что-то пошло не так");
         } else if (src == btnDropAllClients){
             chatServer.dropAllClients();
         } else if (src == btnStopListening){
@@ -79,5 +81,19 @@ public class ChatServerGUI extends JFrame implements ActionListener, ChatServerL
                 log.setCaretPosition(log.getDocument().getLength());
             }
         });
+    }
+
+    @Override
+    public void uncaughtException(Thread t, Throwable e) {
+        e.printStackTrace();
+        StackTraceElement[] stackTraceElements = e.getStackTrace();
+        String msg;
+        if (stackTraceElements.length == 0){
+            msg = "Пустой";
+        } else {
+            msg = e.getClass().getCanonicalName() + ": " + e.getMessage() + "\n" + stackTraceElements[0];
+        }
+        JOptionPane.showMessageDialog(null, msg, "Exception: ", JOptionPane.ERROR_MESSAGE);
+        System.exit(1);
     }
 }
