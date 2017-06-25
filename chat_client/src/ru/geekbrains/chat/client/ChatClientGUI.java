@@ -20,7 +20,6 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
     private static final int WIDTH = 900;
     private static final int HEIGHT = 300;
     private static final String TITLE = "Chat client";
-    private static boolean isConnected = false;
 
     private final JPanel upperPanel = new JPanel(new GridLayout(2, 3));
     private final JTextField fieldIPAddr = new JTextField("89.222.249.131");
