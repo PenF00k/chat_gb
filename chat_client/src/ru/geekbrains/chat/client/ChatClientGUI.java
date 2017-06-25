@@ -79,6 +79,30 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         setVisible(true);
     }
 
+    private void connect(){
+        setViewState(true);
+        System.out.println("Connected");
+    }
+
+    private void disconnect(){
+        setViewState(false);
+        System.out.println("Disconnected");
+    }
+
+    private void sendMessage(){
+        String msg = fieldInput.getText();
+        if (msg.equals("")) return;
+        log.append(msg + "\n");
+        log.setCaretPosition(log.getDocument().getLength());
+        fieldInput.setText("");
+        System.out.println("Message sent");
+    }
+
+    private void setViewState(boolean isConnected){
+        upperPanel.setVisible(!isConnected);
+        bottomPanel.setVisible(isConnected);
+    }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         Object src = e.getSource();
@@ -107,29 +131,5 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         }
         JOptionPane.showMessageDialog(null, msg, "Exception: ", JOptionPane.ERROR_MESSAGE);
         System.exit(1);
-    }
-
-    private void connect(){
-        setViewState(true);
-        System.out.println("Connected");
-    }
-
-    private void disconnect(){
-        setViewState(false);
-        System.out.println("Disconnected");
-    }
-
-    private void sendMessage(){
-        String msg = fieldInput.getText();
-        if (msg.equals("")) return;
-        log.append(msg + "\n");
-        log.setCaretPosition(log.getDocument().getLength());
-        fieldInput.setText("");
-        System.out.println("Message sent");
-    }
-
-    private void setViewState(boolean isConnected){
-        upperPanel.setVisible(!isConnected);
-        bottomPanel.setVisible(isConnected);
     }
 }
