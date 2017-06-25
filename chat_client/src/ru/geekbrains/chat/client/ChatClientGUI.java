@@ -120,15 +120,8 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
     }
 
     private void sendMessage(){
-        String msg = fieldInput.getText(); //Без этой переменной в потоке не видно
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                System.out.println("Значение fieldInput: " + fieldInput.getText()); //Всегда пустое
-                log.append(msg + "\n");
-                log.setCaretPosition(log.getDocument().getLength());
-            }
-        });
+        log.append(fieldInput.getText() + "\n");
+        log.setCaretPosition(log.getDocument().getLength());
         fieldInput.setText("");
         System.out.println("Message sent");
     }
