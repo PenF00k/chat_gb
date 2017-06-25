@@ -20,6 +20,7 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
     private static final int WIDTH = 900;
     private static final int HEIGHT = 300;
     private static final String TITLE = "Chat client";
+    private static boolean isConnected = false;
 
     private final JPanel upperPanel = new JPanel(new GridLayout(2, 3));
     private final JTextField fieldIPAddr = new JTextField("89.222.249.131");
@@ -51,6 +52,12 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         upperPanel.add(fieldPass);
         upperPanel.add(btnLogin);
 
+        btnLogin.addActionListener(this);
+        btnDisconnect.addActionListener(this);
+        btnSend.addActionListener(this);
+        chkAlwaysOnTop.addActionListener(this);
+        fieldInput.addActionListener(this);
+
         add(upperPanel, BorderLayout.NORTH);
 
         log.setEditable(false);
@@ -68,13 +75,25 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         bottomPanel.setVisible(true);
 
         add(bottomPanel, BorderLayout.SOUTH);
+        setViewState(false);
 
         setVisible(true);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-
+        Object src = e.getSource();
+        if (src == btnLogin){
+            connect();
+        } else if (src == btnDisconnect){
+            disconnect();
+        } else if (src == fieldInput || src == btnSend){
+            sendMessage();
+        } else if (src == chkAlwaysOnTop){
+            setAlwaysOnTop(chkAlwaysOnTop.isSelected());
+        } else {
+            throw new RuntimeException("Unknown src = " + src);
+        }
     }
 
     @Override
@@ -92,14 +111,31 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
     }
 
     private void connect(){
-        System.out.println("Connect");
+        setViewState(true);
+        System.out.println("Connected");
     }
 
     private void disconnect(){
-        System.out.println("Disconnect");
+        setViewState(false);
+        System.out.println("Disconnected");
     }
 
     private void sendMessage(){
-        System.out.println("Send message");
+        String msg = fieldInput.getText(); //Без этой переменной в потоке не видно
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                System.out.println("Значение fieldInput: " + fieldInput.getText()); //Всегда пустое
+                log.append(msg + "\n");
+                log.setCaretPosition(log.getDocument().getLength());
+            }
+        });
+        fieldInput.setText("");
+        System.out.println("Message sent");
+    }
+
+    private void setViewState(boolean isConnected){
+        upperPanel.setVisible(!isConnected);
+        bottomPanel.setVisible(isConnected);
     }
 }
