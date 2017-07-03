@@ -2,6 +2,7 @@ package ru.geekbrains.chat.server.gui;
 
 import ru.geekbrains.chat.server.core.ChatServer;
 import ru.geekbrains.chat.server.core.ChatServerListener;
+import ru.geekbrains.chat.server.core.SQLSecurityManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,10 +20,10 @@ public class ChatServerGUI extends JFrame implements ActionListener, ChatServerL
     private static final String DROP_ALL_CLIENTS = "Drop all clients";
     private static final String STOP_LISTENING = "Stop listening";
 
-    private final ChatServer chatServer = new ChatServer(this);
+    private final ChatServer chatServer = new ChatServer(this, new SQLSecurityManager());
     private final JButton btnStartListening = new JButton(START_LISTENING);
-    private final JButton btnStopListening = new JButton(DROP_ALL_CLIENTS);
-    private final JButton btnDropAllClients = new JButton(STOP_LISTENING);
+    private final JButton btnDropAllClients = new JButton(DROP_ALL_CLIENTS);
+    private final JButton btnStopListening = new JButton(STOP_LISTENING);
     private final JTextArea log = new JTextArea();
 
     public static void main(String[] args) {
@@ -41,8 +42,8 @@ public class ChatServerGUI extends JFrame implements ActionListener, ChatServerL
         setTitle(TITLE);
 
         btnStartListening.addActionListener(this);
-        btnDropAllClients.addActionListener(this);
         btnStopListening.addActionListener(this);
+        btnDropAllClients.addActionListener(this);
 
         JPanel upperPanel = new JPanel(new GridLayout(1, 3));
         upperPanel.add(btnStartListening);
@@ -64,7 +65,6 @@ public class ChatServerGUI extends JFrame implements ActionListener, ChatServerL
         Object src = e.getSource();
         if (src == btnStartListening){
             chatServer.startListening(8189);
-            throw new RuntimeException("Ой, что-то пошло не так");
         } else if (src == btnDropAllClients){
             chatServer.dropAllClients();
         } else if (src == btnStopListening){

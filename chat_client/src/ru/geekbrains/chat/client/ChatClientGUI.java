@@ -51,6 +51,10 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         upperPanel.add(fieldPass);
         upperPanel.add(btnLogin);
 
+        fieldIPAddr.addActionListener(this);
+        fieldPort.addActionListener(this);
+        fieldLogin.addActionListener(this);
+        fieldPass.addActionListener(this);
         btnLogin.addActionListener(this);
         btnDisconnect.addActionListener(this);
         btnSend.addActionListener(this);
@@ -74,18 +78,18 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         bottomPanel.setVisible(true);
 
         add(bottomPanel, BorderLayout.SOUTH);
-        setViewState(false);
+        setConnectedViewVisible(false);
 
         setVisible(true);
     }
 
     private void connect(){
-        setViewState(true);
+        setConnectedViewVisible(true);
         System.out.println("Connected");
     }
 
     private void disconnect(){
-        setViewState(false);
+        setConnectedViewVisible(false);
         System.out.println("Disconnected");
     }
 
@@ -98,7 +102,7 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         System.out.println("Message sent");
     }
 
-    private void setViewState(boolean isConnected){
+    private void setConnectedViewVisible(boolean isConnected){
         upperPanel.setVisible(!isConnected);
         bottomPanel.setVisible(isConnected);
     }
@@ -106,7 +110,11 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
     @Override
     public void actionPerformed(ActionEvent e) {
         Object src = e.getSource();
-        if (src == btnLogin){
+        if (    src == btnLogin ||
+                src == fieldIPAddr ||
+                src == fieldPort ||
+                src == fieldLogin ||
+                src == fieldPass){
             connect();
         } else if (src == btnDisconnect){
             disconnect();
