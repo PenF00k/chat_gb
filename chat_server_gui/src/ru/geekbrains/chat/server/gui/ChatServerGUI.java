@@ -56,7 +56,7 @@ public class ChatServerGUI extends JFrame implements ActionListener, ChatServerL
         JScrollPane scrollLog = new JScrollPane(log);
         add(scrollLog, BorderLayout.CENTER);
 
-
+        setAlwaysOnTop(true);
         setVisible(true);
     }
 

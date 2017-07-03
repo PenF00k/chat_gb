@@ -1,11 +1,18 @@
 package ru.geekbrains.chat.client;
 
+import ru.geekbrains.chat.network.SocketThread;
+import ru.geekbrains.chat.network.SocketThreadListener;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.net.Socket;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 
-public class ChatClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler {
+public class ChatClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, SocketThreadListener {
 
     public static void main(String[] args) {
 
@@ -17,12 +24,17 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         });
     }
 
+    private Socket socket;
+    private final DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss: ");
+
+
     private static final int WIDTH = 900;
     private static final int HEIGHT = 300;
     private static final String TITLE = "Chat client";
 
     private final JPanel upperPanel = new JPanel(new GridLayout(2, 3));
-    private final JTextField fieldIPAddr = new JTextField("89.222.249.131");
+    private final JTextField fieldIPAddr = new JTextField("127.0.0.1");
+//    private final JTextField fieldIPAddr = new JTextField("89.222.249.131");
     private final JTextField fieldPort = new JTextField("8189");
     private final JCheckBox chkAlwaysOnTop = new JCheckBox("Always on top");
     private final JTextField fieldLogin = new JTextField("penf00k");
@@ -83,28 +95,40 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         setVisible(true);
     }
 
+    private SocketThread socketThread;
+
     private void connect(){
+        try {
+            socket = new Socket(fieldIPAddr.getText(), Integer.parseInt(fieldPort.getText()));
+            socketThread = new SocketThread(this, "SocketThread", socket);
+        } catch (IOException e) {
+            e.printStackTrace();
+            log.append("Exception: " + e.getMessage() + "\n");
+            log.setCaretPosition(log.getDocument().getLength());
+        }
         setConnectedViewVisible(true);
-        System.out.println("Connected");
     }
 
     private void disconnect(){
+        socketThread.close();
         setConnectedViewVisible(false);
-        System.out.println("Disconnected");
     }
 
     private void sendMessage(){
-        String msg = fieldInput.getText();
+        String msg = dateFormat.format(System.currentTimeMillis()) + fieldInput.getText();
         if (msg.equals("")) return;
-        log.append(msg + "\n");
-        log.setCaretPosition(log.getDocument().getLength());
-        fieldInput.setText("");
-        System.out.println("Message sent");
+        fieldInput.setText(null);
+        socketThread.sendMsg(msg);
     }
 
     private void setConnectedViewVisible(boolean isConnected){
-        upperPanel.setVisible(!isConnected);
-        bottomPanel.setVisible(isConnected);
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                upperPanel.setVisible(!isConnected);
+                bottomPanel.setVisible(isConnected);
+            }
+        });
     }
 
     @Override
@@ -139,5 +163,62 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         }
         JOptionPane.showMessageDialog(null, msg, "Exception: ", JOptionPane.ERROR_MESSAGE);
         System.exit(1);
+    }
+
+    //SocketThread
+    @Override
+    public void onStartSocketThread(SocketThread socketThread) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                log.append("Поток сокета запущен.\n");
+                log.setCaretPosition(log.getDocument().getLength());
+            }
+        });
+    }
+
+    @Override
+    public void onStopSocketThread(SocketThread socketThread) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                log.append("Соединение потеряно.\n");
+                log.setCaretPosition(log.getDocument().getLength());
+            }
+        });
+    }
+
+    @Override
+    public void onReadySocketThread(SocketThread socketThread, Socket socket) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                log.append("Соединение установлено.\n");
+                log.setCaretPosition(log.getDocument().getLength());
+            }
+        });
+    }
+
+    @Override
+    public void onRecieveString(SocketThread socketThread, Socket socket, String value) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                log.append(value + ".\n");
+                log.setCaretPosition(log.getDocument().getLength());
+            }
+        });
+    }
+
+    @Override
+    public void onExceptionSocketThread(SocketThread socketThread, Socket socket, Exception e) {
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                e.printStackTrace();
+                log.append("Exception: " + e.getMessage() + "\n");
+                log.setCaretPosition(log.getDocument().getLength());
+            }
+        });
     }
 }

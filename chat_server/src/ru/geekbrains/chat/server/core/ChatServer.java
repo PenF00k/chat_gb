@@ -9,6 +9,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Vector;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
 
@@ -16,6 +17,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     private ChatServerListener eventListener;
     private final SecurityManager securityManager;
     private ServerSocketThread serverSocketThread;
+    private final Vector<SocketThread> clients = new Vector<>();
 
     public ChatServer(ChatServerListener eventListener, SecurityManager securityManager){
         this.eventListener = eventListener;
@@ -86,26 +88,29 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     //SocketThread
     @Override
     public synchronized void onStartSocketThread(SocketThread socketThread) {
-
+        System.out.println("started...");
     }
 
     @Override
     public synchronized void onStopSocketThread(SocketThread socketThread) {
-
+        clients.remove(socketThread);
     }
 
     @Override
     public synchronized void onReadySocketThread(SocketThread socketThread, Socket socket) {
-
+        System.out.println("Socket is ready...");
+        clients.add(socketThread);
     }
 
     @Override
     public synchronized void onRecieveString(SocketThread socketThread, Socket socket, String value) {
-
+        for (int i = 0; i < clients.size(); i++) {
+            clients.get(i).sendMsg(value);
+        }
     }
 
     @Override
     public synchronized void onExceptionSocketThread(SocketThread socketThread, Socket socket, Exception e) {
-
+        putLog("Exception: " + e.getClass().getName() + ": " + e.getMessage());
     }
 }
