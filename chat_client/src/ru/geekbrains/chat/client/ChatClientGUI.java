@@ -1,5 +1,6 @@
 package ru.geekbrains.chat.client;
 
+import ru.geekbrains.chat.library.Messages;
 import ru.geekbrains.chat.network.SocketThread;
 import ru.geekbrains.chat.network.SocketThreadListener;
 
@@ -25,20 +26,18 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
     }
 
     private Socket socket;
-    private final DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss: ");
-
 
     private static final int WIDTH = 900;
     private static final int HEIGHT = 300;
     private static final String TITLE = "Chat client";
 
     private final JPanel upperPanel = new JPanel(new GridLayout(2, 3));
-    private final JTextField fieldIPAddr = new JTextField("127.0.0.1");
-//    private final JTextField fieldIPAddr = new JTextField("89.222.249.131");
+//    private final JTextField fieldIPAddr = new JTextField("127.0.0.1");
+    private final JTextField fieldIPAddr = new JTextField("89.222.249.131");
     private final JTextField fieldPort = new JTextField("8189");
     private final JCheckBox chkAlwaysOnTop = new JCheckBox("Always on top");
     private final JTextField fieldLogin = new JTextField("penf00k");
-    private final JPasswordField fieldPass = new JPasswordField("000000");
+    private final JPasswordField fieldPass = new JPasswordField("123456");
     private final JButton btnLogin = new JButton("Login");
 
     private final JTextArea log = new JTextArea();
@@ -115,7 +114,7 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
     }
 
     private void sendMessage(){
-        String msg = dateFormat.format(System.currentTimeMillis()) + fieldInput.getText();
+        String msg = fieldInput.getText();
         if (msg.equals("")) return;
         fieldInput.setText(null);
         socketThread.sendMsg(msg);
@@ -195,6 +194,10 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
             public void run() {
                 log.append("Соединение установлено.\n");
                 log.setCaretPosition(log.getDocument().getLength());
+
+                String login = fieldLogin.getText();
+                String password = new String(fieldPass.getPassword());
+                socketThread.sendMsg(Messages.getAuthRequest(login, password));
             }
         });
     }

@@ -1,5 +1,6 @@
 package ru.geekbrains.chat.server.core;
 
+import ru.geekbrains.chat.library.Messages;
 import ru.geekbrains.chat.network.ServerSocketThread;
 import ru.geekbrains.chat.network.ServerSocketThreadListener;
 import ru.geekbrains.chat.network.SocketThread;
@@ -18,6 +19,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     private final SecurityManager securityManager;
     private ServerSocketThread serverSocketThread;
     private final Vector<SocketThread> clients = new Vector<>();
+    private ChatSocketThread client;
 
     public ChatServer(ChatServerListener eventListener, SecurityManager securityManager){
         this.eventListener = eventListener;
@@ -71,7 +73,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     public void onAcceptedSocket(ServerSocketThread thread, ServerSocket serverSocket, Socket socket) {
         putLog("Client connected: " + socket);
         String threadName = "Socket thread: " + socket.getInetAddress() + ": " + socket.getPort();
-        new SocketThread(this, threadName, socket);
+        new ChatSocketThread(this, threadName, socket);
     }
 
     @Override
@@ -94,6 +96,11 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     @Override
     public synchronized void onStopSocketThread(SocketThread socketThread) {
         clients.remove(socketThread);
+        putLog("Stopped");
+        if (client.isAuthorized()){
+            sendToAllAuthorizedClients(Messages.getBroadcast("Server", client.getNick() + " connected"));
+        }
+        //TODO дописать сообщение в чат (client наверно надо вынести в поле)
     }
 
     @Override
@@ -104,9 +111,42 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
 
     @Override
     public synchronized void onRecieveString(SocketThread socketThread, Socket socket, String value) {
-        for (int i = 0; i < clients.size(); i++) {
-            clients.get(i).sendMsg(value);
+        client = (ChatSocketThread) socketThread;
+        if (client.isAuthorized()){
+            handleAuthorizedClient(client, value);
+        } else {
+            handleNonAuthorizedClient(client, value);
         }
+
+    }
+
+    private void handleAuthorizedClient(ChatSocketThread client, String msg){
+        sendToAllAuthorizedClients(Messages.getBroadcast(client.getNick(), msg));
+    }
+
+    private void sendToAllAuthorizedClients(String msg){
+        for (int i = 0; i < clients.size(); i++) {
+            ChatSocketThread client = (ChatSocketThread) clients.get(i);
+            if (client.isAuthorized()) clients.get(i).sendMsg(msg);
+        }
+    }
+
+    private void handleNonAuthorizedClient(ChatSocketThread client, String msg){
+        String[] tokens = msg.split(Messages.DELIMITER);
+        if (tokens.length != 3 || !tokens[0].equals(Messages.AUTH_REQUEST)){
+            client.messageFormatError(msg);
+            return;
+        }
+        String login = tokens[1];
+        String password = tokens[2];
+        String nickname = securityManager.getNick(login, password);
+        if (nickname == null){
+            client.authError();
+            return;
+        }
+        client.setAuthorized(nickname);
+        putLog(nickname + " connected");
+        sendToAllAuthorizedClients(Messages.getBroadcast("Server", client.getNick() + " connected"));
     }
 
     @Override
