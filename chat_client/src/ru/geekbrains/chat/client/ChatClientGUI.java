@@ -204,6 +204,7 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
                 String login = fieldLogin.getText();
                 String password = new String(fieldPass.getPassword());
                 socketThread.sendMsg(Messages.getAuthRequest(login, password));
+                setTitle(TITLE + " - Current user: " + login);
             }
         });
     }
@@ -219,8 +220,9 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
                     log.append(msgLog + ".\n");
                     log.setCaretPosition(log.getDocument().getLength());
                 } else if (tokens[0].equals(Messages.USERS_LIST)){
+                    userListModel.removeAllElements();
                     for (int i = 1; i < tokens.length; i++) {
-                        userListModel.addElement(tokens[1]);
+                        userListModel.addElement(tokens[i]);
                     }
                     System.out.println("USERS_LIST recieved");
                 }

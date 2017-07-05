@@ -21,7 +21,6 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     private ServerSocketThread serverSocketThread;
     private final Vector<SocketThread> clients = new Vector<>();
     private ChatSocketThread client;
-    private LinkedHashSet<String> usersSet = new LinkedHashSet<>();
 
     public ChatServer(ChatServerListener eventListener, SecurityManager securityManager){
         this.eventListener = eventListener;
@@ -102,6 +101,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         if (client.isAuthorized()){
             sendToAllAuthorizedClients(Messages.getBroadcast("Server", client.getNick() + " disconnected"));
         }
+        sendUsersList();
     }
 
     @Override
@@ -148,8 +148,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         client.setAuthorized(nickname);
         putLog(nickname + " connected");
         sendToAllAuthorizedClients(Messages.getBroadcast("Server", client.getNick() + " connected"));
-        usersSet.add(client.getNick());
-        sendToAllAuthorizedClients(Messages.getUsersList(getUsersString(usersSet)));
+        sendUsersList();
     }
 
     @Override
@@ -157,13 +156,15 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         putLog("Exception: " + e.getClass().getName() + ": " + e.getMessage());
     }
 
-    String getUsersString(LinkedHashSet<String> users){
+    private void sendUsersList(){
+        if (clients.size() == 0) return;
         StringBuilder sb = new StringBuilder();
-        for (String user : users) {
-            sb.append(user).append(Messages.DELIMITER);
+        for (SocketThread client : clients) {
+            ChatSocketThread cst = (ChatSocketThread)client;
+            sb.append(cst.getNick()).append(Messages.DELIMITER);
         }
+        //По идее можно убрать строчку ниже, т.к. split (в клиенте) откинет пустую строку после разделителя
         sb.substring(0, sb.lastIndexOf(Messages.DELIMITER));
-        System.out.println(sb.toString());
-        return sb.toString();
+        sendToAllAuthorizedClients(Messages.getUsersList(sb.toString()));
     }
 }
