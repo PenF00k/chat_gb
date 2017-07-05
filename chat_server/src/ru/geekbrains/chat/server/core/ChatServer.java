@@ -10,6 +10,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.LinkedHashSet;
 import java.util.Vector;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
@@ -20,6 +21,7 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     private ServerSocketThread serverSocketThread;
     private final Vector<SocketThread> clients = new Vector<>();
     private ChatSocketThread client;
+    private LinkedHashSet<String> usersSet = new LinkedHashSet<>();
 
     public ChatServer(ChatServerListener eventListener, SecurityManager securityManager){
         this.eventListener = eventListener;
@@ -98,9 +100,8 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         clients.remove(socketThread);
         putLog("Stopped");
         if (client.isAuthorized()){
-            sendToAllAuthorizedClients(Messages.getBroadcast("Server", client.getNick() + " connected"));
+            sendToAllAuthorizedClients(Messages.getBroadcast("Server", client.getNick() + " disconnected"));
         }
-        //TODO дописать сообщение в чат (client наверно надо вынести в поле)
     }
 
     @Override
@@ -147,10 +148,22 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         client.setAuthorized(nickname);
         putLog(nickname + " connected");
         sendToAllAuthorizedClients(Messages.getBroadcast("Server", client.getNick() + " connected"));
+        usersSet.add(client.getNick());
+        sendToAllAuthorizedClients(Messages.getUsersList(getUsersString(usersSet)));
     }
 
     @Override
     public synchronized void onExceptionSocketThread(SocketThread socketThread, Socket socket, Exception e) {
         putLog("Exception: " + e.getClass().getName() + ": " + e.getMessage());
+    }
+
+    String getUsersString(LinkedHashSet<String> users){
+        StringBuilder sb = new StringBuilder();
+        for (String user : users) {
+            sb.append(user).append(Messages.DELIMITER);
+        }
+        sb.substring(0, sb.lastIndexOf(Messages.DELIMITER));
+        System.out.println(sb.toString());
+        return sb.toString();
     }
 }

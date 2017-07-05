@@ -26,22 +26,27 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
     }
 
     private Socket socket;
+    private final DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
     private static final int WIDTH = 900;
     private static final int HEIGHT = 300;
     private static final String TITLE = "Chat client";
 
     private final JPanel upperPanel = new JPanel(new GridLayout(2, 3));
-//    private final JTextField fieldIPAddr = new JTextField("127.0.0.1");
-    private final JTextField fieldIPAddr = new JTextField("89.222.249.131");
+    private final JTextField fieldIPAddr = new JTextField("127.0.0.1");
+//    private final JTextField fieldIPAddr = new JTextField("89.222.249.131");
     private final JTextField fieldPort = new JTextField("8189");
     private final JCheckBox chkAlwaysOnTop = new JCheckBox("Always on top");
-    private final JTextField fieldLogin = new JTextField("penf00k");
-    private final JPasswordField fieldPass = new JPasswordField("123456");
+    private final JTextField fieldLogin = new JTextField("login_1");
+//    private final JTextField fieldLogin = new JTextField("penf00k");
+    private final JPasswordField fieldPass = new JPasswordField("pass_1");
+//    private final JPasswordField fieldPass = new JPasswordField("123456");
     private final JButton btnLogin = new JButton("Login");
 
     private final JTextArea log = new JTextArea();
-    private final JList<String> userList = new JList<>();
+    private static DefaultListModel<String> userListModel = new DefaultListModel();
+    private final JList<String> userList = new JList<>(userListModel);
+
 
     private final JPanel bottomPanel = new JPanel(new BorderLayout());
     private final JButton btnDisconnect = new JButton("Disconnect");
@@ -80,6 +85,7 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         add(scrollLog, BorderLayout.CENTER);
 
         JScrollPane scrollUsers = new JScrollPane(userList);
+
         scrollUsers.setPreferredSize(new Dimension(150, 0));
         add(scrollUsers, BorderLayout.EAST);
 
@@ -207,8 +213,17 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                log.append(value + ".\n");
-                log.setCaretPosition(log.getDocument().getLength());
+                String[] tokens = value.split(Messages.DELIMITER);
+                if (tokens[0].equals(Messages.BROADCAST) && tokens.length == 4){
+                    String msgLog = dateFormat.format(Long.parseLong(tokens[1])) + ": " + tokens[2] + " написал(а): " + tokens[3];
+                    log.append(msgLog + ".\n");
+                    log.setCaretPosition(log.getDocument().getLength());
+                } else if (tokens[0].equals(Messages.USERS_LIST)){
+                    for (int i = 1; i < tokens.length; i++) {
+                        userListModel.addElement(tokens[1]);
+                    }
+                    System.out.println("USERS_LIST recieved");
+                }
             }
         });
     }

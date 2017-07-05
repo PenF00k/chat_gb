@@ -1,5 +1,7 @@
 package ru.geekbrains.chat.library;
 
+import com.sun.xml.internal.ws.api.ha.StickyFeature;
+
 public class Messages {
 
     public static final String DELIMITER =          ";";
@@ -40,5 +42,4 @@ public class Messages {
      public static String getMsgFormatError(String value){
             return MSG_FORMAT_ERROR + DELIMITER + value;
         }
-
 }

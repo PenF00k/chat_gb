@@ -5,6 +5,9 @@ import ru.geekbrains.chat.network.SocketThread;
 import ru.geekbrains.chat.network.SocketThreadListener;
 
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 
 class ChatSocketThread extends SocketThread {
 
@@ -36,4 +39,5 @@ class ChatSocketThread extends SocketThread {
     }
 
     String getNick(){return nick;}
+
 }
