@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 
 public class ChatClientGUI extends JFrame implements ActionListener, Thread.UncaughtExceptionHandler, SocketThreadListener {
 
@@ -33,14 +34,14 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
     private static final String TITLE = "Chat client";
 
     private final JPanel upperPanel = new JPanel(new GridLayout(2, 3));
-    private final JTextField fieldIPAddr = new JTextField("127.0.0.1");
-//    private final JTextField fieldIPAddr = new JTextField("89.222.249.131");
+//    private final JTextField fieldIPAddr = new JTextField("127.0.0.1");
+    private final JTextField fieldIPAddr = new JTextField("89.222.249.131");
     private final JTextField fieldPort = new JTextField("8189");
     private final JCheckBox chkAlwaysOnTop = new JCheckBox("Always on top");
-    private final JTextField fieldLogin = new JTextField("login_1");
-//    private final JTextField fieldLogin = new JTextField("penf00k");
-    private final JPasswordField fieldPass = new JPasswordField("pass_1");
-//    private final JPasswordField fieldPass = new JPasswordField("123456");
+//    private final JTextField fieldLogin = new JTextField("login_1");
+    private final JTextField fieldLogin = new JTextField("penf00k");
+//    private final JPasswordField fieldPass = new JPasswordField("pass_1");
+    private final JPasswordField fieldPass = new JPasswordField("123456");
     private final JButton btnLogin = new JButton("Login");
 
     private final JTextArea log = new JTextArea();
@@ -173,22 +174,21 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
     //SocketThread
     @Override
     public void onStartSocketThread(SocketThread socketThread) {
-        SwingUtilities.invokeLater(new Runnable() {
-            @Override
-            public void run() {
-                log.append("Поток сокета запущен.\n");
-                log.setCaretPosition(log.getDocument().getLength());
-            }
-        });
+        System.out.println(dateFormat.format(System.currentTimeMillis()) + ": " + "Поток сокета запущен.\n");
     }
+
+    private static final String[] EMPTY = new String[0];
 
     @Override
     public void onStopSocketThread(SocketThread socketThread) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                log.append("Соединение потеряно.\n");
+                log.append(dateFormat.format(System.currentTimeMillis()) + ": " + "Соединение разорвано.\n");
                 log.setCaretPosition(log.getDocument().getLength());
+                setTitle(TITLE);
+                userList.setListData(EMPTY);
+                setConnectedViewVisible(false);
             }
         });
     }
@@ -198,13 +198,12 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                log.append("Соединение установлено.\n");
+                log.append(dateFormat.format(System.currentTimeMillis()) + ": " + "Соединение установлено.\n");
                 log.setCaretPosition(log.getDocument().getLength());
 
                 String login = fieldLogin.getText();
                 String password = new String(fieldPass.getPassword());
                 socketThread.sendMsg(Messages.getAuthRequest(login, password));
-                setTitle(TITLE + " - Current user: " + login);
             }
         });
     }
@@ -215,16 +214,34 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
             @Override
             public void run() {
                 String[] tokens = value.split(Messages.DELIMITER);
-                if (tokens[0].equals(Messages.BROADCAST) && tokens.length == 4){
-                    String msgLog = dateFormat.format(Long.parseLong(tokens[1])) + ": " + tokens[2] + " написал(а): " + tokens[3];
-                    log.append(msgLog + ".\n");
-                    log.setCaretPosition(log.getDocument().getLength());
-                } else if (tokens[0].equals(Messages.USERS_LIST)){
-                    userListModel.removeAllElements();
-                    for (int i = 1; i < tokens.length; i++) {
-                        userListModel.addElement(tokens[i]);
-                    }
-                    System.out.println("USERS_LIST recieved");
+                String type = tokens[0];
+                switch (type){
+                    case Messages.BROADCAST:
+                        log.append(dateFormat.format(Long.parseLong(tokens[1])) + ": " + tokens[2] + " написал(а): " + tokens[3] + ".\n");
+                        log.setCaretPosition(log.getDocument().getLength());
+                        break;
+                    case Messages.USERS_LIST:
+                        String allUsers = value.substring(Messages.USERS_LIST.length() + Messages.DELIMITER.length());
+                        String[] users = allUsers.split(Messages.DELIMITER);
+                        Arrays.sort(users);
+                        userList.setListData(users);
+                    case Messages.AUTH_ACCEPT:
+                        setTitle(TITLE + " - Current user: " + tokens[1]);
+                        break;
+                    case Messages.AUTH_ERROR:
+                        log.append(dateFormat.format(System.currentTimeMillis()) + ": " + "Неправильные имя/пароль\n");
+                        log.setCaretPosition(log.getDocument().getLength());
+                        break;
+                    case Messages.RECONNECT:
+                        log.append("Переподключен с другого клиента.\n");
+                        log.setCaretPosition(log.getDocument().getLength());
+                        break;
+                    case Messages.MSG_FORMAT_ERROR:
+                        log.append("Неверный формат сообщения: '" + value + "'\n");
+                        log.setCaretPosition(log.getDocument().getLength());
+                        break;
+                    default:
+                        throw new RuntimeException(dateFormat.format(System.currentTimeMillis()) + ": " + "Неизвестный тип сообщения: " + value);
                 }
             }
         });
@@ -236,8 +253,6 @@ public class ChatClientGUI extends JFrame implements ActionListener, Thread.Unca
             @Override
             public void run() {
                 e.printStackTrace();
-                log.append("Exception: " + e.getMessage() + "\n");
-                log.setCaretPosition(log.getDocument().getLength());
             }
         });
     }

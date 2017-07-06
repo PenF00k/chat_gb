@@ -1,7 +1,5 @@
 package ru.geekbrains.chat.library;
 
-import com.sun.xml.internal.ws.api.ha.StickyFeature;
-
 public class Messages {
 
     public static final String DELIMITER =          ";";
@@ -41,5 +39,9 @@ public class Messages {
 //     /msg_format_error time value
      public static String getMsgFormatError(String value){
             return MSG_FORMAT_ERROR + DELIMITER + value;
+        }
+
+     public static String getReconnect(){
+            return RECONNECT;
         }
 }

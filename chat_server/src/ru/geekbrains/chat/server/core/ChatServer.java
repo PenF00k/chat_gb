@@ -1,5 +1,6 @@
 package ru.geekbrains.chat.server.core;
 
+import com.sun.xml.internal.ws.api.message.MessageWritable;
 import ru.geekbrains.chat.library.Messages;
 import ru.geekbrains.chat.network.ServerSocketThread;
 import ru.geekbrains.chat.network.ServerSocketThreadListener;
@@ -10,7 +11,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.LinkedHashSet;
 import java.util.Vector;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
@@ -98,10 +98,10 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     public synchronized void onStopSocketThread(SocketThread socketThread) {
         clients.remove(socketThread);
         putLog("Stopped");
-        if (client.isAuthorized()){
+        if (client.isAuthorized() && !client.isReconnected()){
             sendToAllAuthorizedClients(Messages.getBroadcast("Server", client.getNick() + " disconnected"));
         }
-        sendUsersList();
+        sendToAllAuthorizedClients(Messages.getUsersList(getUser()));
     }
 
     @Override
@@ -132,23 +132,31 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         }
     }
 
-    private void handleNonAuthorizedClient(ChatSocketThread client, String msg){
+    private void handleNonAuthorizedClient(ChatSocketThread newClient, String msg){
         String[] tokens = msg.split(Messages.DELIMITER);
         if (tokens.length != 3 || !tokens[0].equals(Messages.AUTH_REQUEST)){
-            client.messageFormatError(msg);
+            newClient.messageFormatError(msg);
             return;
         }
         String login = tokens[1];
         String password = tokens[2];
         String nickname = securityManager.getNick(login, password);
         if (nickname == null){
-            client.authError();
+            newClient.authError();
             return;
         }
-        client.setAuthorized(nickname);
-        putLog(nickname + " connected");
-        sendToAllAuthorizedClients(Messages.getBroadcast("Server", client.getNick() + " connected"));
-        sendUsersList();
+
+        ChatSocketThread client = getClientByNick(nickname);
+        newClient.setAuthorized(nickname);
+        if (client == null){
+            putLog(nickname + " connected");
+            sendToAllAuthorizedClients(Messages.getBroadcast("Server", newClient.getNick() + " connected"));
+            sendToAllAuthorizedClients(Messages.getUsersList(getUser()));
+        } else {
+            putLog(nickname + " reconnected");
+            client.reconnect();
+            newClient.sendMsg(Messages.getUsersList(getUser()));
+        }
     }
 
     @Override
@@ -156,15 +164,27 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
         putLog("Exception: " + e.getClass().getName() + ": " + e.getMessage());
     }
 
-    private void sendUsersList(){
-        if (clients.size() == 0) return;
-        StringBuilder sb = new StringBuilder();
-        for (SocketThread client : clients) {
-            ChatSocketThread cst = (ChatSocketThread)client;
-            sb.append(cst.getNick()).append(Messages.DELIMITER);
+    private ChatSocketThread getClientByNick(String nickname){
+        final int cnt = clients.size();
+        for (int i = 0; i < cnt; i++) {
+            ChatSocketThread client = (ChatSocketThread) clients.get(i);
+            if (!client.isAuthorized()) continue;
+            if (client.getNick().equals(nickname)) return client;
         }
-        //По идее можно убрать строчку ниже, т.к. split (в клиенте) откинет пустую строку после разделителя
-        sb.substring(0, sb.lastIndexOf(Messages.DELIMITER));
-        sendToAllAuthorizedClients(Messages.getUsersList(sb.toString()));
+        return null;
+    }
+
+    private String getUser(){
+        //        if (clients.size() == 0) return;
+        StringBuilder sb = new StringBuilder();
+        final int cnt = clients.size();
+        final int last = cnt -1;
+        for (int i = 0; i < cnt; i++) {
+            ChatSocketThread client = (ChatSocketThread) clients.get(i);
+            if (!client.isAuthorized()) continue;
+            sb.append(client.getNick()).append(Messages.DELIMITER);
+            if (i != last) sb.append(Messages.DELIMITER);
+        }
+        return sb.toString();
     }
 }

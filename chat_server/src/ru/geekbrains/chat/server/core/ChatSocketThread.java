@@ -12,6 +12,7 @@ import java.util.LinkedHashSet;
 class ChatSocketThread extends SocketThread {
 
     private boolean isAuthorized;
+    private boolean isReconnected;
     private String nick;
 
     ChatSocketThread(SocketThreadListener eventListener, String name, Socket socket) {
@@ -28,6 +29,10 @@ class ChatSocketThread extends SocketThread {
         return isAuthorized;
     }
 
+    boolean isReconnected(){
+        return isReconnected;
+    }
+
     void authError(){
         sendMsg(Messages.getAuthError());
         close();
@@ -35,6 +40,12 @@ class ChatSocketThread extends SocketThread {
 
     void messageFormatError(String msg){
         sendMsg(Messages.getMsgFormatError(msg));
+        close();
+    }
+
+    void reconnect(){
+        isReconnected = true;
+        sendMsg(Messages.getReconnect());
         close();
     }
 
